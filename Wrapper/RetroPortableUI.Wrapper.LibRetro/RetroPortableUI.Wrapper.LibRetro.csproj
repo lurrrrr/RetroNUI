@@ -64,6 +64,7 @@
     <Compile Include="Structures\RetroGameGeometry.cs" />
     <Compile Include="Structures\RetroGameInfo.cs" />
     <Compile Include="Structures\RetroMessage.cs" />
+    <Compile Include="Structures\RetroPixelFormat.cs" />
     <Compile Include="Structures\RetroSystemAVInfo.cs" />
     <Compile Include="Structures\RetroSystemInfo.cs" />
     <Compile Include="Structures\RetroSystemTiming.cs" />

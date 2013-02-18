@@ -1,12 +1,22 @@
 using System;
+using System.Diagnostics;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using RetroPortableUI.Wrapper.LibRetro.Structures;
-using System.Diagnostics;
 
 namespace RetroPortableUI.Wrapper.LibRetro
 {
 	public class RetroWrapper
 	{
+        struct Color
+        {
+            public int R;
+            public int G;
+            public int B;
+        };
+
+        private RetroPixelFormat pixelFormat;
+
         public RetroWrapper()
         {
             Debug.WriteLine("Initializing libretro instance");
@@ -16,6 +26,41 @@ namespace RetroPortableUI.Wrapper.LibRetro
 		private unsafe void RetroVideoRefresh(void *data, uint width, uint  height, uint pitch)
 		{
             Debug.WriteLine("Video Refresh Callback");
+            //Process Pixels one by one for now...
+            if (pixelFormat == RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565)
+            {
+                List<Color> pixelColors = new List<Color>();
+                IntPtr pixels = (IntPtr)data;
+                var size = Marshal.SizeOf(typeof(Int16));
+
+                for (int i = 0; i < height; i++)
+                {
+                    for (int j = 0; j < width; j++)
+                    {
+                        Int16 packed = Marshal.ReadInt16(pixels);
+                        pixelColors.Add(new Color() 
+                        { 
+                            R = (0xF800 & packed) >> 11
+                            , G = (0x07E0 & packed) >> 5
+                            , B = (0x001F & packed)
+                        });
+
+                        pixels = (IntPtr)((int)pixels + size);
+                    }
+                }
+
+                for (int i = 0; i < height; i++)
+                {
+                    Debug.Write("[ ");
+                    for (int j = 0; j < width; j++)
+                    {
+                        int index = i * (int)width + j;
+                        Debug.Write(string.Format("({0},{1},{2})", pixelColors[index].R.ToString("00"), pixelColors[index].G.ToString("00"), pixelColors[index].B.ToString("00")));
+                    }
+                    Debug.WriteLine(" ]");
+                }
+            }
+
 			return;
 		}
 
@@ -65,6 +110,21 @@ namespace RetroPortableUI.Wrapper.LibRetro
             case ConfigurationConstants.RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
 				break;
             case ConfigurationConstants.RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
+                pixelFormat = *(RetroPixelFormat*)data;
+                switch (pixelFormat)
+                {
+                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_0RGB1555:
+                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
+                        break;
+                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565:
+                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: RGB565.\n");
+                        break;
+                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_XRGB8888:
+                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
+                        break;
+                    default:
+                        return false;
+                }
 				break;
             case ConfigurationConstants.RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
 				break;
