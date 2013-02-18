@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using RetroPortableUI.Wrapper.LibRetro.Structures;
+using RetroPortableUI.Wrapper.LibRetro.RetroStructures;
 
 namespace RetroPortableUI.Wrapper.LibRetro
 {

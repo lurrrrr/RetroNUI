@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RetroPortableUI.Wrapper.LibRetro.Structures
+namespace RetroPortableUI.Wrapper.LibRetro.RetroStructures
 {
     public enum RetroPixelFormat
     {

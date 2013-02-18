@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace RetroPortableUI.Wrapper.LibRetro.Structures
+namespace RetroPortableUI.Wrapper.LibRetro.RetroStructures
 {
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RetroSystemInfo

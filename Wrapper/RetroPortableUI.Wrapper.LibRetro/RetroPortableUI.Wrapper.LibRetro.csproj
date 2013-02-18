@@ -61,16 +61,20 @@
     <Compile Include="DelegateDefinition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RetroMethods.cs" />
-    <Compile Include="Structures\RetroGameGeometry.cs" />
-    <Compile Include="Structures\RetroGameInfo.cs" />
-    <Compile Include="Structures\RetroMessage.cs" />
-    <Compile Include="Structures\RetroPixelFormat.cs" />
-    <Compile Include="Structures\RetroSystemAVInfo.cs" />
-    <Compile Include="Structures\RetroSystemInfo.cs" />
-    <Compile Include="Structures\RetroSystemTiming.cs" />
-    <Compile Include="Structures\RetroVariable.cs" />
+    <Compile Include="RetroStructures\RetroGameGeometry.cs" />
+    <Compile Include="RetroStructures\RetroGameInfo.cs" />
+    <Compile Include="RetroStructures\RetroMessage.cs" />
+    <Compile Include="RetroStructures\RetroPixelFormat.cs" />
+    <Compile Include="RetroStructures\RetroSystemAVInfo.cs" />
+    <Compile Include="RetroStructures\RetroSystemInfo.cs" />
+    <Compile Include="RetroStructures\RetroSystemTiming.cs" />
+    <Compile Include="RetroStructures\RetroVariable.cs" />
     <Compile Include="RetroWrapper.cs" />
+    <Compile Include="Support\IRetroController.cs" />
+    <Compile Include="Support\IRenderer.cs" />
+    <Compile Include="Support\PixelDefinition.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

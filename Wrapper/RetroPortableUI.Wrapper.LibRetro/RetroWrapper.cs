@@ -2,133 +2,204 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using RetroPortableUI.Wrapper.LibRetro.Structures;
+using RetroPortableUI.Wrapper.LibRetro.RetroStructures;
+using RetroPortableUI.Wrapper.LibRetro.Support;
 
 namespace RetroPortableUI.Wrapper.LibRetro
 {
-	public class RetroWrapper
+	public class RetroWrapper : IRetroController
 	{
-        struct Color
-        {
-            public int R;
-            public int G;
-            public int B;
-        };
+		private RetroPixelFormat pixelFormat;
+		private IRenderer renderDriver;
 
-        private RetroPixelFormat pixelFormat;
+		//Prevent GC on delegates as long as the wrapper is running
+		private DelegateDefinition.RetroEnvironmentDelegate _environment;
+		private DelegateDefinition.RetroVideoRefreshDelegate _videoRefresh;
+		private DelegateDefinition.RetroAudioSampleDelegate _audioSample;
+		private DelegateDefinition.RetroAudioSampleBatchDelegate _audioSampleBatch;
+		private DelegateDefinition.RetroInputPollDelegate _inputPoll;
+		private DelegateDefinition.RetroInputStateDelegate _inputState;
 
-        public RetroWrapper()
-        {
-            Debug.WriteLine("Initializing libretro instance");
-            return;
-        }
+		public RetroWrapper(IRenderer renderer)
+		{
+			PrintDebugInformation("Initializing libretro instance");
+#if ! DEBUG
+			if (renderer == null)
+			{
+				throw new Exception("Renderer Cannot be null")
+			}
+#endif
+			renderDriver = renderer;
+		}
 
 		private unsafe void RetroVideoRefresh(void *data, uint width, uint  height, uint pitch)
 		{
-            Debug.WriteLine("Video Refresh Callback");
-            //Process Pixels one by one for now...
-            if (pixelFormat == RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565)
-            {
-                List<Color> pixelColors = new List<Color>();
-                IntPtr pixels = (IntPtr)data;
-                var size = Marshal.SizeOf(typeof(Int16));
+			PrintDebugInformation("Video Refresh Callback");
 
-                for (int i = 0; i < height; i++)
-                {
-                    for (int j = 0; j < width; j++)
-                    {
-                        Int16 packed = Marshal.ReadInt16(pixels);
-                        pixelColors.Add(new Color() 
-                        { 
-                            R = (0xF800 & packed) >> 11
-                            , G = (0x07E0 & packed) >> 5
-                            , B = (0x001F & packed)
-                        });
+			// Process Pixels one by one for now...this is not the best way to do it 
+			// should be using memory streams or something
 
-                        pixels = (IntPtr)((int)pixels + size);
-                    }
-                }
+			//Declare the pixel buffer to pass on to the renderer
+			PixelDefinition[] pixelData = new PixelDefinition[width * height];
 
-                for (int i = 0; i < height; i++)
-                {
-                    Debug.Write("[ ");
-                    for (int j = 0; j < width; j++)
-                    {
-                        int index = i * (int)width + j;
-                        Debug.Write(string.Format("({0},{1},{2})", pixelColors[index].R.ToString("00"), pixelColors[index].G.ToString("00"), pixelColors[index].B.ToString("00")));
-                    }
-                    Debug.WriteLine(" ]");
-                }
-            }
+			//Get the array from unmanaged memory as a pointer
+			IntPtr pixels = (IntPtr)data;
 
-			return;
+			//Get the size to move the pointer
+			Int32 size = 0;
+
+			uint i = 0;
+			uint j = 0;
+
+			switch (pixelFormat)
+			{
+				case RetroPixelFormat.RETRO_PIXEL_FORMAT_0RGB1555:
+					size = Marshal.SizeOf(typeof(Int16));
+					for (i = 0; i < height; i++)
+					{
+						for (j = 0; j < width; j++)
+						{
+							Int16 packed = Marshal.ReadInt16(pixels);
+							pixelData[i * width + j] = new PixelDefinition()
+							{
+								Alpha = 1
+								,
+								Red = (packed >> 10) & 0x001F
+								,
+								Green = (packed >> 5) & 0x001F
+								,
+								Blue = (packed & 0x001F)
+							};
+
+							pixels = (IntPtr)((int)pixels + size);
+						}
+					}
+					break;
+				case RetroPixelFormat.RETRO_PIXEL_FORMAT_XRGB8888:
+					size = Marshal.SizeOf(typeof(Int32));
+					for (i = 0; i < height; i++)
+					{
+						for (j = 0; j < width; j++)
+						{
+							Int32 packed = Marshal.ReadInt32(pixels);
+							pixelData[i * width + j] = new PixelDefinition()
+							{
+								Alpha = 1
+								,
+								Red = (packed >> 16) & 0x00FF
+								,
+								Green = (packed >> 8) & 0x00FF
+								,
+								Blue = (packed & 0x00FF)
+							};
+
+							pixels = (IntPtr)((int)pixels + size);
+						}
+					}
+					break;
+				case RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565:
+					size = Marshal.SizeOf(typeof(Int16));
+					for (i = 0; i < height; i++)
+					{
+						for (j = 0; j < width; j++)
+						{
+							Int16 packed = Marshal.ReadInt16(pixels);
+							pixelData[i * width + j] = new PixelDefinition()
+							{
+								Alpha = 1
+								,
+								Red = (packed >> 11) & 0x001F
+								,
+								Green = (packed >> 5) & 0x003F
+								,
+								Blue = (packed & 0x001F)
+							};
+
+							pixels = (IntPtr)((int)pixels + size);
+						}
+					}
+					break;
+				case RetroPixelFormat.RETRO_PIXEL_FORMAT_UNKNOWN:
+					pixelData = null;
+					break;
+			}
+
+			//Call renderer implementation
+#if DEBUG
+			if (renderDriver != null)
+			{
+#endif
+				renderDriver.RenderFrame(pixelData, width, height, pitch);
+#if DEBUG
+			}
+#endif
 		}
 
 		private unsafe void RetroAudioSample(Int16 left, Int16 right)
 		{
-            Debug.WriteLine("Audio Sample Callback");
+			PrintDebugInformation("Audio Sample Callback");
 			return;
 		}
 
 		public unsafe void RetroAudioSampleBatch(Int16 *data, uint frames)
 		{
-            Debug.WriteLine("Audio Sample Batch Callback");
+			PrintDebugInformation("Audio Sample Batch Callback");
 			return;
 		}
 
 		public unsafe void RetroInputPoll()
 		{
-            Debug.WriteLine("Input Poll Callback");
+			PrintDebugInformation("Input Poll Callback");
 			return;
 		}
 
 		public unsafe Int16 RetroInputState(uint port, uint device, uint index, uint id)
 		{
-            Debug.WriteLine("Input State Callback");
+			PrintDebugInformation("Input State Callback");
 			return 0;
 		}
 
 		public unsafe bool RetroEnvironment(uint cmd, void *data)
 		{
-            Debug.WriteLine("Environment Callback");
+			PrintDebugInformation("Environment Callback");
 			switch (cmd)
 			{
 			case ConfigurationConstants.RETRO_ENVIRONMENT_GET_OVERSCAN:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_GET_VARIABLE:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_GET_VARIABLE:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_VARIABLES:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_VARIABLES:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_MESSAGE:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_MESSAGE:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_ROTATION:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_ROTATION:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SHUTDOWN:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SHUTDOWN:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
-                pixelFormat = *(RetroPixelFormat*)data;
-                switch (pixelFormat)
-                {
-                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_0RGB1555:
-                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
-                        break;
-                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565:
-                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: RGB565.\n");
-                        break;
-                    case RetroPixelFormat.RETRO_PIXEL_FORMAT_XRGB8888:
-                        Debug.WriteLine("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
-                        break;
-                    default:
-                        return false;
-                }
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
+				pixelFormat = *(RetroPixelFormat*)data;
+				switch (pixelFormat)
+				{
+					case RetroPixelFormat.RETRO_PIXEL_FORMAT_0RGB1555:
+						PrintDebugInformation("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
+						break;
+					case RetroPixelFormat.RETRO_PIXEL_FORMAT_RGB565:
+						PrintDebugInformation("Environ SET_PIXEL_FORMAT: RGB565.\n");
+						break;
+					case RetroPixelFormat.RETRO_PIXEL_FORMAT_XRGB8888:
+						PrintDebugInformation("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
+						break;
+					default:
+						return false;
+				}
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
 				break;
-            case ConfigurationConstants.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
+			case ConfigurationConstants.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
 				break;
 			default:
 				return false;
@@ -136,11 +207,11 @@ namespace RetroPortableUI.Wrapper.LibRetro
 			return true;
 		}
 
-		public unsafe void Init ()
+		private unsafe void Init ()
 		{
 			int _apiVersion = RetroMethods.retro_api_version();
-            RetroSystemInfo info = new RetroSystemInfo();
-            RetroMethods.retro_get_system_info(ref info);
+			RetroSystemInfo info = new RetroSystemInfo();
+			RetroMethods.retro_get_system_info(ref info);
 	
 			string _coreName = Marshal.PtrToStringAnsi((IntPtr)info.library_name);
 			string _coreVersion = Marshal.PtrToStringAnsi((IntPtr)info.library_version);
@@ -148,57 +219,69 @@ namespace RetroPortableUI.Wrapper.LibRetro
 			bool _requiresFullPath = info.need_fullpath;
 			bool _blockExtract = info.block_extract;
 
-            Debug.WriteLine("Core information:");
-            Debug.WriteLine("API Version: " + _apiVersion);
-            Debug.WriteLine("Core Name: " + _coreName);
-            Debug.WriteLine("Core Version: " + _coreVersion);
-            Debug.WriteLine("Valid Extensions: " + _validExtensions);
-            Debug.WriteLine("Block Extraction: " + _blockExtract);
-            Debug.WriteLine("Requires Full Path: " + _requiresFullPath);
+			PrintDebugInformation("Core information:");
+			PrintDebugInformation("API Version: " + _apiVersion);
+			PrintDebugInformation("Core Name: " + _coreName);
+			PrintDebugInformation("Core Version: " + _coreVersion);
+			PrintDebugInformation("Valid Extensions: " + _validExtensions);
+			PrintDebugInformation("Block Extraction: " + _blockExtract);
+			PrintDebugInformation("Requires Full Path: " + _requiresFullPath);
 
-            DelegateDefinition.RetroEnvironmentDelegate _environment = new DelegateDefinition.RetroEnvironmentDelegate(RetroEnvironment);
-            DelegateDefinition.RetroVideoRefreshDelegate _videoRefresh = new DelegateDefinition.RetroVideoRefreshDelegate(RetroVideoRefresh);
-            DelegateDefinition.RetroAudioSampleDelegate _audioSample = new DelegateDefinition.RetroAudioSampleDelegate(RetroAudioSample);
-            DelegateDefinition.RetroAudioSampleBatchDelegate _audioSampleBatch = new DelegateDefinition.RetroAudioSampleBatchDelegate(RetroAudioSampleBatch);
-            DelegateDefinition.RetroInputPollDelegate _inputPoll = new DelegateDefinition.RetroInputPollDelegate(RetroInputPoll);
-            DelegateDefinition.RetroInputStateDelegate _inputState = new DelegateDefinition.RetroInputStateDelegate(RetroInputState);
+			_environment = new DelegateDefinition.RetroEnvironmentDelegate(RetroEnvironment);
+			_videoRefresh = new DelegateDefinition.RetroVideoRefreshDelegate(RetroVideoRefresh);
+			_audioSample = new DelegateDefinition.RetroAudioSampleDelegate(RetroAudioSample);
+			_audioSampleBatch = new DelegateDefinition.RetroAudioSampleBatchDelegate(RetroAudioSampleBatch);
+			_inputPoll = new DelegateDefinition.RetroInputPollDelegate(RetroInputPoll);
+			_inputState = new DelegateDefinition.RetroInputStateDelegate(RetroInputState);
 
-            Debug.WriteLine("\nSetting up environment:");
-            RetroMethods.retro_set_environment(_environment);
-            RetroMethods.retro_set_video_refresh(_videoRefresh);
-            RetroMethods.retro_set_audio_sample(_audioSample);
-            RetroMethods.retro_set_audio_sample_batch(_audioSampleBatch);
-            RetroMethods.retro_set_input_poll(_inputPoll);
-            RetroMethods.retro_set_input_state(_inputState);
+			PrintDebugInformation("\nSetting up environment:");
+			RetroMethods.retro_set_environment(_environment);
+			RetroMethods.retro_set_video_refresh(_videoRefresh);
+			RetroMethods.retro_set_audio_sample(_audioSample);
+			RetroMethods.retro_set_audio_sample_batch(_audioSampleBatch);
+			RetroMethods.retro_set_input_poll(_inputPoll);
+			RetroMethods.retro_set_input_state(_inputState);
 
-            Debug.WriteLine("\nInitializing:");
-            RetroMethods.retro_init();
+			PrintDebugInformation("\nInitializing:");
+			RetroMethods.retro_init();
 
-            Debug.WriteLine("\nLoading rom:");
-            RetroGameInfo gameInfo = new RetroGameInfo();
-            RetroMethods.retro_load_game(ref gameInfo);
+			PrintDebugInformation("\nLoading rom:");
+			RetroGameInfo gameInfo = new RetroGameInfo();
+			RetroMethods.retro_load_game(ref gameInfo);
 
-            Debug.WriteLine("\nSystem information:");
+			PrintDebugInformation("\nSystem information:");
 
-            RetroSystemAVInfo av = new RetroSystemAVInfo();
-            RetroMethods.retro_get_system_av_info(ref av);
-            
-            Debug.WriteLine("Geometry:");
-            Debug.WriteLine("Base width: " + av.geometry.base_width);
-            Debug.WriteLine("Base height: " + av.geometry.base_height);
-            Debug.WriteLine("Max width: " + av.geometry.max_width);
-            Debug.WriteLine("Max height: " + av.geometry.max_height);
-            Debug.WriteLine("Aspect ratio: " + av.geometry.aspect_ratio);
-            Debug.WriteLine("Geometry:");
-            Debug.WriteLine("Target fps: " + av.timing.fps);
-            Debug.WriteLine("Sample rate " + av.timing.sample_rate);               
+			RetroSystemAVInfo av = new RetroSystemAVInfo();
+			RetroMethods.retro_get_system_av_info(ref av);
+			
+			PrintDebugInformation("Geometry:");
+			PrintDebugInformation("Base width: " + av.geometry.base_width);
+			PrintDebugInformation("Base height: " + av.geometry.base_height);
+			PrintDebugInformation("Max width: " + av.geometry.max_width);
+			PrintDebugInformation("Max height: " + av.geometry.max_height);
+			PrintDebugInformation("Aspect ratio: " + av.geometry.aspect_ratio);
+			PrintDebugInformation("Geometry:");
+			PrintDebugInformation("Target fps: " + av.timing.fps);
+			PrintDebugInformation("Sample rate " + av.timing.sample_rate);               
 		}
 
-        public void Run()
-        {
-            Debug.WriteLine("Processing Frame:");
-            RetroMethods.retro_run();
-        }
+		bool IRetroController.Initialize()
+		{
+			Init();
+			return true;
+		}
+
+		bool IRetroController.Update(double elapsedTime)
+		{
+			PrintDebugInformation("Processing Frame:");
+			RetroMethods.retro_run();
+			return true;
+		}
+
+		private void PrintDebugInformation(string message)
+		{
+			//Debug.WriteLine(message);
+		}
 	}
 }
 
