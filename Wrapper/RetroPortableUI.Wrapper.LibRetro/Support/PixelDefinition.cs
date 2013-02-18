@@ -7,9 +7,9 @@ namespace RetroPortableUI.Wrapper.LibRetro.Support
 {
     public class PixelDefinition
     {
-        public int Alpha;
-        public int Red;
-        public int Green;
-        public int Blue;
+        public float Alpha;
+        public float Red;
+        public float Green;
+        public float Blue;
     }
 }

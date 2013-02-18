@@ -64,11 +64,11 @@ namespace RetroPortableUI.Wrapper.LibRetro
 							{
 								Alpha = 1
 								,
-								Red = (packed >> 10) & 0x001F
+								Red = (((packed >> 10) & 0x001F) * 31) / 255.0f
 								,
-								Green = (packed >> 5) & 0x001F
+								Green = (((packed >> 5) & 0x001F) * 31) / 255.0f
 								,
-								Blue = (packed & 0x001F)
+								Blue = ((packed & 0x001F) * 31) / 255.0f
 							};
 
 							pixels = (IntPtr)((int)pixels + size);
@@ -108,11 +108,11 @@ namespace RetroPortableUI.Wrapper.LibRetro
 							{
 								Alpha = 1
 								,
-								Red = (packed >> 11) & 0x001F
+								Red = (((packed >> 11) & 0x001F) * 31) / 255.0f
 								,
-								Green = (packed >> 5) & 0x003F
+								Green = (((packed >> 5) & 0x003F) * 63) / 255.0f
 								,
-								Blue = (packed & 0x001F)
+								Blue = ((packed & 0x001F) * 31) / 255.0f
 							};
 
 							pixels = (IntPtr)((int)pixels + size);
