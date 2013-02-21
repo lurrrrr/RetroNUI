@@ -10,5 +10,9 @@ namespace RetroPortableUI.Wrapper.LibRetro.Support
         bool Update(double elapsedTime);
 
         bool Initialize();
+
+        bool Shutdown();
+
+        bool LoadGame(string gamePath);
     }
 }

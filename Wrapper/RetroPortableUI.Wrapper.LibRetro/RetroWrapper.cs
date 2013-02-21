@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using RetroPortableUI.Wrapper.LibRetro.RetroStructures;
 using RetroPortableUI.Wrapper.LibRetro.Support;
+using System.IO;
 
 namespace RetroPortableUI.Wrapper.LibRetro
 {
@@ -11,6 +12,7 @@ namespace RetroPortableUI.Wrapper.LibRetro
 	{
 		private RetroPixelFormat pixelFormat;
 		private IRenderer renderDriver;
+        private bool requiresFullPath;
 
 		//Prevent GC on delegates as long as the wrapper is running
 		private DelegateDefinition.RetroEnvironmentDelegate _environment;
@@ -137,25 +139,25 @@ namespace RetroPortableUI.Wrapper.LibRetro
 
 		private unsafe void RetroAudioSample(Int16 left, Int16 right)
 		{
-			PrintDebugInformation("Audio Sample Callback");
+			//PrintDebugInformation("Audio Sample Callback");
 			return;
 		}
 
 		public unsafe void RetroAudioSampleBatch(Int16 *data, uint frames)
 		{
-			PrintDebugInformation("Audio Sample Batch Callback");
+			//PrintDebugInformation("Audio Sample Batch Callback");
 			return;
 		}
 
 		public unsafe void RetroInputPoll()
 		{
-			PrintDebugInformation("Input Poll Callback");
+			//PrintDebugInformation("Input Poll Callback");
 			return;
 		}
 
 		public unsafe Int16 RetroInputState(uint port, uint device, uint index, uint id)
 		{
-			PrintDebugInformation("Input State Callback");
+			//PrintDebugInformation("Input State Callback");
 			return 0;
 		}
 
@@ -209,14 +211,14 @@ namespace RetroPortableUI.Wrapper.LibRetro
 
 		private unsafe void Init ()
 		{
-			int _apiVersion = RetroMethods.retro_api_version();
+			int _apiVersion = RetroMethods.RetroApiVersion();
 			RetroSystemInfo info = new RetroSystemInfo();
-			RetroMethods.retro_get_system_info(ref info);
+			RetroMethods.RetroGetSystemInfo(ref info);
 	
 			string _coreName = Marshal.PtrToStringAnsi((IntPtr)info.library_name);
 			string _coreVersion = Marshal.PtrToStringAnsi((IntPtr)info.library_version);
 			string _validExtensions = Marshal.PtrToStringAnsi((IntPtr)info.valid_extensions);
-			bool _requiresFullPath = info.need_fullpath;
+            requiresFullPath = info.need_fullpath;
 			bool _blockExtract = info.block_extract;
 
 			PrintDebugInformation("Core information:");
@@ -225,7 +227,7 @@ namespace RetroPortableUI.Wrapper.LibRetro
 			PrintDebugInformation("Core Version: " + _coreVersion);
 			PrintDebugInformation("Valid Extensions: " + _validExtensions);
 			PrintDebugInformation("Block Extraction: " + _blockExtract);
-			PrintDebugInformation("Requires Full Path: " + _requiresFullPath);
+            PrintDebugInformation("Requires Full Path: " + requiresFullPath);
 
 			_environment = new DelegateDefinition.RetroEnvironmentDelegate(RetroEnvironment);
 			_videoRefresh = new DelegateDefinition.RetroVideoRefreshDelegate(RetroVideoRefresh);
@@ -235,35 +237,47 @@ namespace RetroPortableUI.Wrapper.LibRetro
 			_inputState = new DelegateDefinition.RetroInputStateDelegate(RetroInputState);
 
 			PrintDebugInformation("\nSetting up environment:");
-			RetroMethods.retro_set_environment(_environment);
-			RetroMethods.retro_set_video_refresh(_videoRefresh);
-			RetroMethods.retro_set_audio_sample(_audioSample);
-			RetroMethods.retro_set_audio_sample_batch(_audioSampleBatch);
-			RetroMethods.retro_set_input_poll(_inputPoll);
-			RetroMethods.retro_set_input_state(_inputState);
+			RetroMethods.RetroSetEnvironment(_environment);
+			RetroMethods.RetroSetVideoRefresh(_videoRefresh);
+			RetroMethods.RetroSetAudioSample(_audioSample);
+			RetroMethods.RetroSetAudioSampleBatch(_audioSampleBatch);
+			RetroMethods.RetroSetInputPoll(_inputPoll);
+			RetroMethods.RetroSetInputState(_inputState);
 
 			PrintDebugInformation("\nInitializing:");
-			RetroMethods.retro_init();
-
-			PrintDebugInformation("\nLoading rom:");
-			RetroGameInfo gameInfo = new RetroGameInfo();
-			RetroMethods.retro_load_game(ref gameInfo);
-
-			PrintDebugInformation("\nSystem information:");
-
-			RetroSystemAVInfo av = new RetroSystemAVInfo();
-			RetroMethods.retro_get_system_av_info(ref av);
-			
-			PrintDebugInformation("Geometry:");
-			PrintDebugInformation("Base width: " + av.geometry.base_width);
-			PrintDebugInformation("Base height: " + av.geometry.base_height);
-			PrintDebugInformation("Max width: " + av.geometry.max_width);
-			PrintDebugInformation("Max height: " + av.geometry.max_height);
-			PrintDebugInformation("Aspect ratio: " + av.geometry.aspect_ratio);
-			PrintDebugInformation("Geometry:");
-			PrintDebugInformation("Target fps: " + av.timing.fps);
-			PrintDebugInformation("Sample rate " + av.timing.sample_rate);               
+			RetroMethods.RetroInit();           
 		}
+
+        private unsafe char* StringToChar(string s)
+        {
+            IntPtr p = Marshal.StringToHGlobalUni(s);
+            return (char*)(p.ToPointer());
+        }
+
+        private unsafe RetroGameInfo LoadGame(string file)
+        {
+            RetroGameInfo gameInfo = new RetroGameInfo();
+
+            if (requiresFullPath)
+            {
+                gameInfo.path = StringToChar(file);
+            }
+            else
+            {
+                FileStream stream = new FileStream(file, FileMode.Open);
+
+                byte[] data = new byte[stream.Length];
+
+                IntPtr arrayPointer = Marshal.AllocHGlobal(data.Length * Marshal.SizeOf(typeof(byte)));
+                Marshal.Copy(data, 0, arrayPointer, data.Length);
+
+                stream.Read(data, 0, (int)stream.Length);
+                gameInfo.path = StringToChar(file);
+                gameInfo.size = (uint)data.Length;
+                gameInfo.data = arrayPointer.ToPointer();
+            }
+            return gameInfo;
+        }
 
 		bool IRetroController.Initialize()
 		{
@@ -274,13 +288,45 @@ namespace RetroPortableUI.Wrapper.LibRetro
 		bool IRetroController.Update(double elapsedTime)
 		{
 			PrintDebugInformation("Processing Frame:");
-			RetroMethods.retro_run();
+			RetroMethods.RetroRun();
 			return true;
 		}
 
+		bool IRetroController.Shutdown()
+		{
+			PrintDebugInformation("Shutting Down Lib Retro");
+			RetroMethods.RetroDeInit();
+			return true;
+		}
+
+        unsafe bool IRetroController.LoadGame(string gamePath)
+        {
+            PrintDebugInformation("\nLoading rom:");
+
+            RetroGameInfo gameInfo = LoadGame(gamePath);
+            bool ret = RetroMethods.RetroLoadGame(ref gameInfo);
+
+            PrintDebugInformation("\nSystem information:");
+
+            RetroSystemAVInfo av = new RetroSystemAVInfo();
+            RetroMethods.RetroGetSystemAVInfo(ref av);
+
+            PrintDebugInformation("Geometry:");
+            PrintDebugInformation("Base width: " + av.geometry.base_width);
+            PrintDebugInformation("Base height: " + av.geometry.base_height);
+            PrintDebugInformation("Max width: " + av.geometry.max_width);
+            PrintDebugInformation("Max height: " + av.geometry.max_height);
+            PrintDebugInformation("Aspect ratio: " + av.geometry.aspect_ratio);
+            PrintDebugInformation("Geometry:");
+            PrintDebugInformation("Target fps: " + av.timing.fps);
+            PrintDebugInformation("Sample rate " + av.timing.sample_rate);    
+
+            return true;
+        }
+
 		private void PrintDebugInformation(string message)
 		{
-			//Debug.WriteLine(message);
+			Debug.WriteLine(message);
 		}
 	}
 }

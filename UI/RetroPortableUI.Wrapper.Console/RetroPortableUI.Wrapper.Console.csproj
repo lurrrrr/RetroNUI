@@ -110,6 +110,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\RetroPortableUI.Utils\RetroPortableUI.Utils.csproj">
+      <Project>{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}</Project>
+      <Name>RetroPortableUI.Utils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Wrapper\RetroPortableUI.Wrapper.LibRetro\RetroPortableUI.Wrapper.LibRetro.csproj">
       <Project>{B2D567AD-B0DA-4AE0-9871-D380916C01FB}</Project>
       <Name>RetroPortableUI.Wrapper.LibRetro</Name>

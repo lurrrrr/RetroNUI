@@ -21,11 +21,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x86", "x86", "{C465E7B7-2CE
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x86_64", "x86_64", "{9515B702-675D-4391-AD8D-FDF3D202E185}"
 	ProjectSection(SolutionItems) = preProject
+		Cores\x86_64\libretro-089-bsnes-accuracy-x86_64.dll = Cores\x86_64\libretro-089-bsnes-accuracy-x86_64.dll
 		Cores\x86_64\libwinpthread-1.dll = Cores\x86_64\libwinpthread-1.dll
 		Cores\x86_64\retro.dll = Cores\x86_64\retro.dll
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetroPortableUI.Wrapper.WinMG", "UI\RetroPortableUI.Wrapper.WinMG\RetroPortableUI.Wrapper.WinMG.csproj", "{63F3C516-0635-4C6F-8EC2-43F12B8B80E5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{0BAE0C22-4C66-4CF6-B9EF-F0861874C5C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetroPortableUI.Utils", "RetroPortableUI.Utils\RetroPortableUI.Utils.csproj", "{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -105,6 +110,25 @@ Global
 		{63F3C516-0635-4C6F-8EC2-43F12B8B80E5}.Release|x64.ActiveCfg = Release|x86
 		{63F3C516-0635-4C6F-8EC2-43F12B8B80E5}.Release|x86.ActiveCfg = Release|x86
 		{63F3C516-0635-4C6F-8EC2-43F12B8B80E5}.Release|x86.Build.0 = Release|x86
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|Any CPU.Build.0 = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|Mixed Platforms.Build.0 = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|x64.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|x64.Build.0 = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug x64|x86.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -115,5 +139,6 @@ Global
 		{9515B702-675D-4391-AD8D-FDF3D202E185} = {4A9FD519-C1FD-4C9B-B4C8-F4147B63CF60}
 		{0718512F-D1CC-4754-A868-AB479D51B8D5} = {2338ABF5-5FFE-4C4A-B9D9-ECD87FAD428B}
 		{63F3C516-0635-4C6F-8EC2-43F12B8B80E5} = {2338ABF5-5FFE-4C4A-B9D9-ECD87FAD428B}
+		{D0398EDA-DF8B-4B1A-BDCB-6554866A881F} = {0BAE0C22-4C66-4CF6-B9EF-F0861874C5C3}
 	EndGlobalSection
 EndGlobal

@@ -8,7 +8,7 @@ namespace RetroPortableUI.Wrapper.LibRetro.RetroStructures
     {
         public char* path;
         public void* data;
-        public byte size;
+        public uint size;
         public char* meta;
     }
 }

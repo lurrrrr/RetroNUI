@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Storage;
 using Microsoft.Xna.Framework.GamerServices;
 using RetroPortableUI.Wrapper.LibRetro.Support;
 using RetroPortableUI.Wrapper.LibRetro;
+using RetroPortableUI.Utils;
 #endregion
 
 namespace RetroPortableUI.Wrapper.WinMG
@@ -22,14 +23,6 @@ namespace RetroPortableUI.Wrapper.WinMG
         SpriteBatch spriteBatch;
         IRetroController retroLibController;
 
-        public static void AddEnvironmentPaths(string paths)
-        {
-            string path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            path += ";" + string.Join(";", paths);
-
-            Environment.SetEnvironmentVariable("PATH", path);
-        }
-
         public Game1()
             : base()
         {
@@ -38,10 +31,10 @@ namespace RetroPortableUI.Wrapper.WinMG
             Content.RootDirectory = "Content";
 
 #if X86_64 
-            AddEnvironmentPaths("..\\..\\..\\..\\Cores\\x86_64");
+            EnvironmentPath.AddEnvironmentPaths("..\\..\\..\\..\\Cores\\x86_64");
 #endif
 #if X86
-            AddEnvironmentPaths("..\\..\\..\\..\\Cores\\x86");
+            EnvironmentPath.AddEnvironmentPaths("..\\..\\..\\..\\Cores\\x86");
 #endif
         }
 
@@ -54,7 +47,7 @@ namespace RetroPortableUI.Wrapper.WinMG
         protected override void Initialize()
         {
             base.Initialize();
-            retroLibController.Initialize();
+            retroLibController.LoadGame(@"D:\Ivan\Dropbox\mmx.sfc");
         }
 
         /// <summary>
@@ -66,7 +59,7 @@ namespace RetroPortableUI.Wrapper.WinMG
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            retroLibController.Initialize();
         }
 
         /// <summary>
@@ -76,6 +69,8 @@ namespace RetroPortableUI.Wrapper.WinMG
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
+            retroLibController.Shutdown();
+            retroLibController = null;
         }
 
         /// <summary>
